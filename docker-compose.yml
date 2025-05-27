@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # Nginx - Reverse Proxy
+  nginx:
+    image: nginx:1.25-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Node.js Backend
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    ports:
+      - "3000:3000"  # Expor porta para debugging
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_USER=admin
+      - RABBITMQ_PASS=admin
+    volumes:
+      - ./backend:/app/backend
+      - ./mensageria:/app/mensageria
+      - /app/node_modules
+    depends_on:
+      - rabbitmq
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Worker Service
+  worker:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    command: node backend/worker.js
+    environment:
+      - NODE_ENV=production
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_USER=admin
+      - RABBITMQ_PASS=admin
+    volumes:
+      - ./backend:/app/backend
+      - ./mensageria:/app/mensageria
+      - /app/node_modules
+    depends_on:
+      - rabbitmq
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # RabbitMQ Service
+  rabbitmq:
+    build:
+      context: ./mensageria
+      dockerfile: Dockerfile
+    ports:
+      - "5672:5672"  # AMQP protocol
+      - "15672:15672"  # Management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+      - RABBITMQ_DEFAULT_VHOST=/
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  rabbitmq-data:
