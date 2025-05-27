@@ -5,10 +5,9 @@ async function startWorker() {
     await rabbitMQ.connect();
     console.log('Worker connected to RabbitMQ');
     
-    // Processar mensagens da fila default
+    // Processar mensagens da fila default/padrao
     await rabbitMQ.consumeMessage('default', (message) => {
       console.log('Processing message:', message);
-      // Implemente o processamento da mensagem aqui
     });
     
     console.log('Worker started successfully');
@@ -19,3 +18,4 @@ async function startWorker() {
 }
 
 startWorker();
+

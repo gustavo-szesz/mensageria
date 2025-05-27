@@ -5,7 +5,6 @@ let channel = null;
 
 async function connect() {
   try {
-    // Configuração da URL do RabbitMQ usando variáveis de ambiente
     const host = process.env.RABBITMQ_HOST || 'localhost';
     const user = process.env.RABBITMQ_USER || 'admin';
     const pass = process.env.RABBITMQ_PASS || 'admin';
